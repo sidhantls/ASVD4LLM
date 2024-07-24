@@ -3,11 +3,16 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+import os 
 
 
-def calib_fisher_info(model, calib_loader, use_cache=True):
+def calib_fisher_info(model, calib_loader, args, use_cache=True):
     model_id = model.config._name_or_path
     cache_file = f"cache/{model_id.replace('/','_')}_calib_fisher_info.pt"
+
+    cache_file = os.path.join(args.cache_dir, cache_file)
+    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+    
     if os.path.exists(cache_file) and use_cache:
         all_fisher_info = torch.load(cache_file, map_location="cpu")
         for name, module in model.named_modules():
@@ -45,11 +50,15 @@ def calib_fisher_info(model, calib_loader, use_cache=True):
 
 
 @torch.no_grad()
-def calib_input_distribution(model, calib_loader, method, use_cache=True):
+def calib_input_distribution(model, calib_loader, method, args, use_cache=True):
     model_id = model.config._name_or_path
     cache_file = (
         f"cache/{model_id.replace('/','_')}_calib_input_distribution_{method}.pt"
     )
+
+    cache_file = os.path.join(args.cache_dir, cache_file)
+    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+
     if os.path.exists(cache_file) and use_cache:
         all_scaling_diag_matrix = torch.load(cache_file, map_location="cpu")
         for name, module in model.named_modules():
