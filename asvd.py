@@ -3,14 +3,14 @@ import torch
 import os
 from transformers import AutoModelForCausalLM, AutoTokenizer, OPTForCausalLM
 from transformers.models.opt.configuration_opt import OPTConfig
-from evaluate_utils import evaluate_model
+from evaluate_utils import evaluate_model, evaluate_with_harness_full
 from datautils import get_calib_data
 from act_aware_utils import calib_input_distribution, calib_fisher_info
 from sensitivity import calib_sensitivity_ppl, calib_sensitivity_stable_rank
 from quantization import rtn_quant_sequential
 from binary_search import binary_search_truncation_rank
 import numpy as np
-
+import wandb
 
 
 
@@ -20,6 +20,8 @@ def main(args):
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     torch.backends.cudnn.deterministic = True
+
+    wandb_writer = wandb.init(project="learn-to-compress-lrd", name='asvd', config=vars(args))
 
     # Load model
     model_id = args.model_id
@@ -59,14 +61,16 @@ def main(args):
             rtn_quant_sequential(model, 6)
 
     # evaluate
-    result = evaluate_model(
-        model,
-        tokenizer,
-        args.model_id,
-        "mmlu" if args.eval_mmlu else "",
-        eval_ppl="wikitext2,ptb",
-        limit=-1,
-    )
+    # result = evaluate_model(
+    #     model,
+    #     tokenizer,
+    #     args.model_id,
+    #     "mmlu" if args.eval_mmlu else "",
+    #     eval_ppl="wikitext2,ptb",
+    #     limit=-1,
+    # )
+
+    result = evaluate_with_harness_full(model, tokenizer, model.device, debug=False, batch_size=2)
     print(result)
     if not os.path.exists("output"):
         os.makedirs("output")
@@ -74,9 +78,8 @@ def main(args):
         f.write(f"{args}\n")
         f.write(f"{result}\n")
 
-    # finished
-
-
+    wandb.log({**result,'step': 0})
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
