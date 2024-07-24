@@ -11,6 +11,7 @@ from quantization import rtn_quant_sequential
 from binary_search import binary_search_truncation_rank
 import numpy as np
 import wandb
+from os.path import join 
 
 
 
@@ -28,7 +29,7 @@ def main(args):
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_id, device_map="auto", torch_dtype=torch.float16, trust_remote_code=True
+        model_id, device_map="auto", torch_dtype=torch.float16, trust_remote_code=True, cache_dir=args.cache_dir
     )
 
     # if "llama" in model_id or "opt" in model_id:
@@ -37,10 +38,10 @@ def main(args):
     # sensitivity calibration
     calib_loader = get_calib_data(args.calib_dataset, tokenizer, model_id, 256)
     if "fisher" in args.scaling_method:
-        calib_fisher_info(model, calib_loader, args.use_cache)
+        calib_fisher_info(model, calib_loader, args, args.use_cache)
     if "abs" in args.scaling_method:
         calib_input_distribution(
-            model, calib_loader, args.scaling_method, args.use_cache
+            model, calib_loader, args.scaling_method, args, args.use_cache
         )
     if args.sensitivity_metric == "ppl":
         sensitivity = calib_sensitivity_ppl(model, calib_loader, args, args.use_cache)
@@ -88,6 +89,14 @@ if __name__ == "__main__":
         default="facebook/opt-1.3b",
         help="Pretrained model ID",
     )
+
+    parser.add_argument(
+        "--cache_dir",
+        type=str,
+        default="train_cache",
+        help="Path to cache data and models",
+    )
+
     parser.add_argument(
         "--ppl_target",
         type=float,
