@@ -225,7 +225,6 @@ def evaluate_model(
     return results
 
 
-@torch.no_grad()
 def evaluate_with_harness_full(model, tokenizer, device, debug=False, batch_size=2):
     """
     Evaluates a causall LLM model using evaluation harness on the full dataset, unlike def evaluate_with_harness, 
@@ -252,17 +251,19 @@ def evaluate_with_harness_full(model, tokenizer, device, debug=False, batch_size
        limit1, limit_mmlu = 700, 50
        
     all_metrics = {}
-    for num_fewshot in [0, 3]:
+    for num_fewshot in [0, 5]:
         results1 = simple_evaluate( # call simple_evaluate
                 model=lm_obj,
-                tasks=["nq_open", "piqa", "boolq"],
+                tasks=["nq_open", "piqa"],
                 num_fewshot=num_fewshot,
                 limit=limit1,
                 batch_size=batch_size,
                 cache_requests=None,
                 log_samples=False,
-                bootstrap_iters=0
+                bootstrap_iters=0,
+                gen_kwargs="max_new_tokens=40",
             )
+        print(f'Limit used for NQOpen {limit1}')
 
         if debug:
             tasks = ["mmlu_social_sciences"]
@@ -278,18 +279,23 @@ def evaluate_with_harness_full(model, tokenizer, device, debug=False, batch_size
             batch_size=batch_size,
             cache_requests=None,
             log_samples=False,
+            gen_kwargs="max_new_tokens=50",
             bootstrap_iters=1
         )
 
         nq_acc = results1['results']['nq_open']['exact_match,remove_whitespace']
         piqa_acc = results1['results']['piqa']['acc,none']
-        boolq_acc = results1['results']['boolq']['acc,none']
         mmlu1_acc = results_mmlu['results']['mmlu_social_sciences']['acc,none']
-        mmlu2_acc = results_mmlu['results']['mmlu_stem']['acc,none']
+
+        if debug:
+            mmlu2_acc = -1. 
+        else:
+            mmlu2_acc = results_mmlu['results']['mmlu_stem']['acc,none']
 
         row = {f'eval_harness_shot={num_fewshot}/nq_open': nq_acc, f'eval_harness_shot={num_fewshot}/piqa': piqa_acc, 
-               f'eval_harness_shot={num_fewshot}/boolq_acc': boolq_acc,
                 f'eval_harness_shot={num_fewshot}/mmlu_social_sciences': mmlu1_acc, f'eval_harness_shot={num_fewshot}/mmlu_stem': mmlu2_acc}
+        
+        # row[f'eval_harness_shot={num_fewshot}/boolq_acc'] = results1['results']['boolq']['acc,none']
 
         all_metrics.update(row)
 
