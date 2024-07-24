@@ -15,6 +15,20 @@ from os.path import join
 
 
 
+def count_parameters(model):
+    """
+    Calculate the number of parameters in a model and return the count in billions.
+    
+    Args:
+    model: The pre-trained model instance.
+    
+    Returns:
+    float: Number of parameters in billions.
+    """
+    total_params = sum(p.numel() for p in model.parameters())
+    total_params_in_billion = total_params / 1e9
+    return total_params_in_billion
+
 def main(args):
     # setting random seed of numpy and torch
     np.random.seed(args.seed)
@@ -31,6 +45,7 @@ def main(args):
     model = AutoModelForCausalLM.from_pretrained(
         model_id, device_map="auto", torch_dtype=torch.float16, trust_remote_code=True, cache_dir=args.cache_dir
     )
+    num_params_original = count_parameters(model)
 
     # if "llama" in model_id or "opt" in model_id:
     #     model = model.to_bettertransformer()
@@ -80,6 +95,11 @@ def main(args):
         f.write(f"{result}\n")
 
     wandb.log({**result,'step': 0})
+
+    num_params_new = count_parameters(model)
+    print(f"Number of parameters in original model: {num_params_original:.4f} billion")
+    print(f"Number of parameters in new model: {num_params_new:.4f} billion")
+    wandb.log({'old_param_count': num_params_original, 'new_param_count': num_params_new, 'step': 0})
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
