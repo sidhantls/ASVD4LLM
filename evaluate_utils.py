@@ -4,12 +4,19 @@ from tqdm import tqdm
 import os
 
 from datautils import get_eval_loaders
-from lm_eval.base import BaseLM
+# from lm_eval.base import BaseLM
 from lm_eval import evaluator
 from datasets import load_dataset
 import time
 import re
 
+from lm_eval.models import huggingface
+from lm_eval import simple_evaluate
+
+# deprecated
+class BaseLM: 
+    def __init__(self):
+        pass 
 
 class EvalLM(BaseLM):
     def __init__(
@@ -117,6 +124,7 @@ def evaluate_perplexity(model, dataset, limit):
     return ppl.item()
 
 
+
 @torch.no_grad()
 def evaluate_model(
     model,
@@ -215,3 +223,75 @@ def evaluate_model(
         print(f"\n\n===== mean acc: {sum(acc_list)/len(acc_list)} =====\n\n")
 
     return results
+
+
+@torch.no_grad()
+def evaluate_with_harness_full(model, tokenizer, device, debug=False, batch_size=2):
+    """
+    Evaluates a causall LLM model using evaluation harness on the full dataset, unlike def evaluate_with_harness, 
+    which is only on a small susbet 
+
+    Args:
+        model (hf model )
+        device (str, optional): The device to use for the evaluation ('cpu' or 'cuda'). Default is 'cpu'.
+        debug (bool, optional): Whether to run the evaluation in debug mode or not. Default is False.
+        batch_size (int, optional): The batch size to use for the evaluation. Default is 2.
+
+    Returns:
+        dict: A dictionary containing the evaluation metrics, including the accuracy on the MMLU (MultiModal Lexical Understanding) social sciences task and the exact match accuracy on the Natural Questions (NQ) open-ended task.
+    """
+    import time
+
+    start = time.time()
+    model = model.eval() 
+    lm_obj = huggingface.HFLM(pretrained=model, backend='causal', tokenizer=tokenizer, batch_size=batch_size, device=device)
+
+    if debug: 
+       limit1 = limit_mmlu = 2 
+    else: 
+       limit1, limit_mmlu = 700, 50
+       
+    all_metrics = {}
+    for num_fewshot in [0, 3]:
+        results1 = simple_evaluate( # call simple_evaluate
+                model=lm_obj,
+                tasks=["nq_open", "piqa", "boolq"],
+                num_fewshot=num_fewshot,
+                limit=limit1,
+                batch_size=batch_size,
+                cache_requests=None,
+                log_samples=False,
+                bootstrap_iters=0
+            )
+
+        if debug:
+            tasks = ["mmlu_social_sciences"]
+        else:
+            tasks = ["mmlu_social_sciences", "mmlu_stem"]
+            
+        results_mmlu = simple_evaluate( # call simple_evaluate
+            model=lm_obj,
+            tasks=tasks,
+            num_fewshot=num_fewshot,
+            limit=limit_mmlu,
+            device = 'cuda',
+            batch_size=batch_size,
+            cache_requests=None,
+            log_samples=False,
+            bootstrap_iters=1
+        )
+
+        nq_acc = results1['results']['nq_open']['exact_match,remove_whitespace']
+        piqa_acc = results1['results']['piqa']['acc,none']
+        boolq_acc = results1['results']['boolq']['acc,none']
+        mmlu1_acc = results_mmlu['results']['mmlu_social_sciences']['acc,none']
+        mmlu2_acc = results_mmlu['results']['mmlu_stem']['acc,none']
+
+        row = {f'eval_harness_shot={num_fewshot}/nq_open': nq_acc, f'eval_harness_shot={num_fewshot}/piqa': piqa_acc, 
+               f'eval_harness_shot={num_fewshot}/boolq_acc': boolq_acc,
+                f'eval_harness_shot={num_fewshot}/mmlu_social_sciences': mmlu1_acc, f'eval_harness_shot={num_fewshot}/mmlu_stem': mmlu2_acc}
+
+        all_metrics.update(row)
+
+    print(f'Completed evaluation with harness in {time.time()-start: 0.3f} seconds')
+    return all_metrics
