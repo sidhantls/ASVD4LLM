@@ -295,7 +295,8 @@ def evaluate_with_harness_full(model, tokenizer, device, debug=False, batch_size
         row = {f'eval_harness_shot={num_fewshot}/nq_open': nq_acc, f'eval_harness_shot={num_fewshot}/piqa': piqa_acc, 
                 f'eval_harness_shot={num_fewshot}/mmlu_social_sciences': mmlu1_acc, f'eval_harness_shot={num_fewshot}/mmlu_stem': mmlu2_acc}
         
-        # row[f'eval_harness_shot={num_fewshot}/boolq_acc'] = results1['results']['boolq']['acc,none']
+        row[f'eval_harness_shot={num_fewshot}/boolq_acc'] = results1['results']['boolq']['acc,none']
+        row[f'eval_harness_shot={num_fewshot}/openbookqa_acc'] = results1['results']['openbookqa']['acc,none']
 
         all_metrics.update(row)
 
