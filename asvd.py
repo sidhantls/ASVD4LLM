@@ -212,7 +212,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--exp_name",
         type=str,
-        default=-'asvd',
+        default='asvd',
         help="name of experiment",
     )
 
