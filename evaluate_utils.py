@@ -246,59 +246,53 @@ def evaluate_with_harness_full(model, tokenizer, device, debug=False, batch_size
     lm_obj = huggingface.HFLM(pretrained=model, backend='causal', tokenizer=tokenizer, batch_size=batch_size, device=device)
 
     if debug: 
-       limit1 = limit_mmlu = 2 
+       limit1 = limit_mmlu = limit_nqopen = 1
     else: 
-       limit1, limit_mmlu = 700, 50
+       limit1, limit_mmlu, limit_nqopen = 1000, 30, 1000
        
     all_metrics = {}
-    for num_fewshot in [0, 5]:
-        results1 = simple_evaluate( # call simple_evaluate
-                model=lm_obj,
-                tasks=["nq_open", "piqa", "boolq", "openbookqa"],
-                num_fewshot=num_fewshot,
-                limit=limit1,
-                batch_size=batch_size,
-                cache_requests=None,
-                log_samples=False,
-                bootstrap_iters=0,
-                gen_kwargs="max_new_tokens=40",
-            )
-        print(f'Limit used for NQOpen {limit1}')
 
-        if debug:
-            tasks = ["mmlu_social_sciences"]
-        else:
-            tasks = ["mmlu_social_sciences", "mmlu_stem"]
-            
-        results_mmlu = simple_evaluate( # call simple_evaluate
+    results1 = simple_evaluate( # call simple_evaluate
             model=lm_obj,
-            tasks=tasks,
-            num_fewshot=num_fewshot,
-            limit=limit_mmlu,
-            device = 'cuda',
+            tasks=["hellaswag", "winogrande", "arc_easy", "arc_challenge", "piqa", "boolq", "openbookqa"],
+            num_fewshot=0,
+            limit=limit1,
             batch_size=batch_size,
             cache_requests=None,
             log_samples=False,
-            gen_kwargs="max_new_tokens=50",
-            bootstrap_iters=1
+            bootstrap_iters=0,
+            gen_kwargs="max_new_tokens=40",
         )
+    
+    results_mmlu = simple_evaluate( # call simple_evaluate
+        model=lm_obj,
+        tasks=['mmlu'],
+        num_fewshot=5,
+        limit=limit_mmlu,
+        device = 'cuda',
+        batch_size=batch_size,
+        cache_requests=None,
+        log_samples=False,
+        gen_kwargs="max_new_tokens=50",
+        bootstrap_iters=1
+    )
 
-        nq_acc = results1['results']['nq_open']['exact_match,remove_whitespace']
-        piqa_acc = results1['results']['piqa']['acc,none']
-        mmlu1_acc = results_mmlu['results']['mmlu_social_sciences']['acc,none']
+    results_nq = simple_evaluate( # call simple_evaluate
+        model=lm_obj,
+        tasks=['nq_open'],
+        num_fewshot=5,
+        limit=limit_nqopen,
+        device = 'cuda',
+        batch_size=batch_size,
+        cache_requests=None,
+        log_samples=False,
+        gen_kwargs="max_new_tokens=50",
+        bootstrap_iters=1
+    )
 
-        if debug:
-            mmlu2_acc = -1. 
-        else:
-            mmlu2_acc = results_mmlu['results']['mmlu_stem']['acc,none']
-
-        row = {f'eval_harness_shot={num_fewshot}/nq_open': nq_acc, f'eval_harness_shot={num_fewshot}/piqa': piqa_acc, 
-                f'eval_harness_shot={num_fewshot}/mmlu_social_sciences': mmlu1_acc, f'eval_harness_shot={num_fewshot}/mmlu_stem': mmlu2_acc}
-        
-        row[f'eval_harness_shot={num_fewshot}/boolq_acc'] = results1['results']['boolq']['acc,none']
-        row[f'eval_harness_shot={num_fewshot}/openbookqa_acc'] = results1['results']['openbookqa']['acc,none']
-
-        all_metrics.update(row)
+    all_metrics = {f'eval_harness_shot=0/{key}': results1['results'][key]['acc,none'] for key in results1['results']}
+    all_metrics[f'eval_harness_shot=5/nq_open'] = results_nq['results']['nq_open']['exact_match,remove_whitespace']
+    all_metrics[f'eval_harness_shot=5/mmlu'] = results_mmlu['results']['mmlu']['acc,none']
 
     print(f'Completed evaluation with harness in {time.time()-start: 0.3f} seconds')
     return all_metrics
