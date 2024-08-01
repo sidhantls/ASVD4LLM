@@ -8,7 +8,7 @@ from datautils import get_calib_data
 from act_aware_utils import calib_input_distribution, calib_fisher_info
 from sensitivity import calib_sensitivity_ppl, calib_sensitivity_stable_rank
 from quantization import rtn_quant_sequential
-from binary_search import binary_search_truncation_rank
+from binary_search import binary_search_truncation_rank, fixed_truncation_rank
 import numpy as np
 import wandb
 from os.path import join 
@@ -43,7 +43,7 @@ def main(args):
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_id, device_map="auto", torch_dtype=torch.float16, trust_remote_code=True, cache_dir=args.cache_dir
+        model_id, device_map="cpu", torch_dtype=torch.float16, trust_remote_code=True, cache_dir=args.cache_dir
     )
     num_params_old = count_parameters(model)
 
@@ -58,16 +58,20 @@ def main(args):
         calib_input_distribution(
             model, calib_loader, args.scaling_method, args, args.use_cache
         )
-    if args.sensitivity_metric == "ppl":
-        sensitivity = calib_sensitivity_ppl(model, calib_loader, args, args.use_cache)
-    elif args.sensitivity_metric == "stable_rank":
-        sensitivity = calib_sensitivity_stable_rank(
-            model, calib_loader, args, args.use_cache
-        )
 
     # search best truncation rank for each layer
+    if args.fix_ratio: 
+        print('Using fixed compression ratio')
+        fixed_truncation_rank(model, args.param_ratio_target, args)
+    else:
+        if args.sensitivity_metric == "ppl":
+            sensitivity = calib_sensitivity_ppl(model, calib_loader, args, args.use_cache)
+        elif args.sensitivity_metric == "stable_rank":
+            sensitivity = calib_sensitivity_stable_rank(
+                model, calib_loader, args, args.use_cache
+            )
 
-    binary_search_truncation_rank(model, sensitivity, calib_loader, args)
+            binary_search_truncation_rank(model, sensitivity, calib_loader, args)
 
     # quantization
     if args.weight_quant != "none":
@@ -75,16 +79,6 @@ def main(args):
             rtn_quant_sequential(model, 8)
         elif args.weight_quant == "rtn_int6":
             rtn_quant_sequential(model, 6)
-
-    # evaluate
-    # result = evaluate_model(
-    #     model,
-    #     tokenizer,
-    #     args.model_id,
-    #     "mmlu" if args.eval_mmlu else "",
-    #     eval_ppl="wikitext2,ptb",
-    #     limit=-1,
-    # )
 
     result = evaluate_with_harness_full(model, tokenizer, model.device, debug=False, batch_size=2)
     print(result)
@@ -173,6 +167,14 @@ if __name__ == "__main__":
         action="store_true",
         help="use cached calibration results",
     )
+
+    parser.add_argument(
+        "--fix_ratio",
+        action="store_true",
+        default=False,
+        help="If true, uses the target ratio to be fixed across all layers",
+    )
+
     parser.add_argument(
         "--weight_quant",
         type=str,

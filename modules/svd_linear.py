@@ -39,6 +39,7 @@ class SVDLinear(nn.Module):
         compressed_params = int(n_params * param_ratio)
         assert ic_split == 1 or oc_split == 1
         rank = compressed_params // (linear.in_features + linear.out_features)
+        print(f'For param_ratio: {param_ratio}, used rank: {rank} for: {linear}')
         # print("rank", rank)
         w = linear.weight.data.float()
         if act_aware:
