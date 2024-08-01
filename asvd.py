@@ -81,7 +81,7 @@ def main(args):
         elif args.weight_quant == "rtn_int6":
             rtn_quant_sequential(model, 6)
 
-    result = evaluate_with_harness_full(model, tokenizer, model.device, debug=False, batch_size=2)
+    result = evaluate_with_harness_full(model, tokenizer, model.device, debug=False, batch_size=args.eval_bs)
     print(result)
     if not os.path.exists("output"):
         os.makedirs("output")
@@ -212,6 +212,15 @@ if __name__ == "__main__":
         default=-1,
         help="kv cache ratio",
     )
+
+
+    parser.add_argument(
+        "--eval_bs",
+        type=int,
+        default=-2,
+        help="batch size for evaluation harness",
+    )
+
     parser.add_argument(
         "--exp_name",
         type=str,
