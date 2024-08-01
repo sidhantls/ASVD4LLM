@@ -46,6 +46,7 @@ def main(args):
         model_id, device_map="cpu", torch_dtype=torch.float16, trust_remote_code=True, cache_dir=args.cache_dir
     )
     num_params_old = count_parameters(model)
+    model = model.to('cuda' if torch.cuda.is_available() else 'cpu')
 
     # if "llama" in model_id or "opt" in model_id:
     #     model = model.to_bettertransformer()
