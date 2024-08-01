@@ -311,18 +311,15 @@ def fixed_truncation_rank(model, compression_ratio, args):
     for raw_linear in tqdm(linear_info, total=len(module_dict)):
         # set ratio
         info = linear_info[raw_linear]
-        m, n = raw_linear.in_features, raw_linear.out_features
-        rank = compression_ratio * m * n / (m + n)
-        ratio = rank/min(m, n)
 
         svd_linear = SVDLinear.from_linear(
             raw_linear,
-            param_ratio=ratio,
+            param_ratio=compression_ratio,
             alpha=args.alpha,
             act_aware=args.act_aware,
             sigma_fuse=args.sigma_fuse,
         )
         setattr(info["father"], info["name"], svd_linear)
-        print(f'Using ratio: {ratio:0.4f} for layer: {info["name"]}')
+        # print(f'Using ratio: {ratio:0.4f} for layer: {info["name"]}')
 
         
