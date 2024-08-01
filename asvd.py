@@ -58,19 +58,20 @@ def main(args):
         calib_input_distribution(
             model, calib_loader, args.scaling_method, args, args.use_cache
         )
-    if args.sensitivity_metric == "ppl":
-        sensitivity = calib_sensitivity_ppl(model, calib_loader, args, args.use_cache)
-    elif args.sensitivity_metric == "stable_rank":
-        sensitivity = calib_sensitivity_stable_rank(
-            model, calib_loader, args, args.use_cache
-        )
 
     # search best truncation rank for each layer
     if args.fix_ratio: 
         print('Using fixed compression ratio')
         fixed_truncation_rank(model, args.param_ratio_target, args)
     else:
-        binary_search_truncation_rank(model, sensitivity, calib_loader, args)
+        if args.sensitivity_metric == "ppl":
+            sensitivity = calib_sensitivity_ppl(model, calib_loader, args, args.use_cache)
+        elif args.sensitivity_metric == "stable_rank":
+            sensitivity = calib_sensitivity_stable_rank(
+                model, calib_loader, args, args.use_cache
+            )
+
+            binary_search_truncation_rank(model, sensitivity, calib_loader, args)
 
     # quantization
     if args.weight_quant != "none":
