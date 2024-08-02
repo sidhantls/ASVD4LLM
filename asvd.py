@@ -36,7 +36,7 @@ def main(args):
     torch.cuda.manual_seed_all(args.seed)
     torch.backends.cudnn.deterministic = True
 
-    wandb_writer = wandb.init(project="learn-to-compress-lrd-2", name=args.exp_name, config=vars(args))
+    wandb_writer = wandb.init(project="learn-to-compress-lrd2", name=args.exp_name, config=vars(args))
 
     # Load model
     model_id = args.model_id
