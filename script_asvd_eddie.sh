@@ -31,4 +31,4 @@ export TOKENIZERS_PARALLELISM=false
 
 #python asvd.py --model_id=meta-llama/Llama-2-7b-hf --cache_dir=/exports/eddie/scratch/s2593541/lrd/cache_train_llama2 --act_aware --alpha 0.5 --n_calib_samples 32 --scaling_method abs_mean --param_ratio_target 0.9 --use_cache 
 
-python asvd.py --model_id=meta-llama/Llama-2-7b-hf --exp_name=asvd_90 --fix_ratio --cache_dir=/exports/eddie/scratch/s2593541/lrd/cache_train_llama2 --act_aware --alpha=1. --n_calib_samples 32 --scaling_method abs_mean --param_ratio_target 0.90 --use_cache
+python asvd.py --model_id=meta-llama/Llama-2-7b-hf --eval_bs=8 --exp_name=asvd_fixed_90 --fix_ratio --cache_dir=/exports/eddie/scratch/s2593541/lrd/cache_train_llama2 --act_aware --alpha=1. --n_calib_samples 32 --scaling_method abs_mean --param_ratio_target 0.90 --use_cache
