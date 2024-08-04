@@ -72,7 +72,7 @@ def main(args):
                 model, calib_loader, args, args.use_cache
             )
 
-            binary_search_truncation_rank(model, sensitivity, calib_loader, args)
+        binary_search_truncation_rank(model, sensitivity, calib_loader, args)
 
     # quantization
     if args.weight_quant != "none":
