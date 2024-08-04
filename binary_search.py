@@ -52,7 +52,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
             for layername, ratio in layers_min_ratio.items():
                 raw_linear = module_dict[layername]
                 info = linear_info[raw_linear]
-                svd_linear = SVDLinear.from_linear(
+                svd_linear, _ = SVDLinear.from_linear(
                     raw_linear,
                     param_ratio=ratio,
                     alpha=args.alpha,
@@ -91,7 +91,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
         # set ratio
         raw_linear = module_dict[layername]
         info = linear_info[raw_linear]
-        svd_linear = SVDLinear.from_linear(
+        svd_linear, _ = SVDLinear.from_linear(
             raw_linear,
             param_ratio=ratio,
             alpha=args.alpha,
@@ -241,7 +241,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
             for layername, ratio in layers_min_ratio.items():
                 raw_linear = module_dict[layername]
                 info = linear_info[raw_linear]
-                svd_linear = SVDLinear.from_linear(
+                svd_linear, _ = SVDLinear.from_linear(
                     raw_linear,
                     param_ratio=ratio,
                     alpha=args.alpha,
@@ -323,7 +323,7 @@ def fixed_truncation_rank(model, compression_ratio, args):
         # set ratio
         info = linear_info[raw_linear]
 
-        svd_linear = SVDLinear.from_linear(
+        svd_linear, _ = SVDLinear.from_linear(
             raw_linear,
             param_ratio=compression_ratio,
             alpha=args.alpha,
