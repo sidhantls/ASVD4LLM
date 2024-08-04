@@ -4,7 +4,7 @@ import torch.nn as nn
 from evaluate_utils import evaluate_model, evaluate_perplexity
 from modules.svd_linear import SVDLinear,GradSVDLinear
 from tqdm import tqdm
-
+import json
 
 def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
     module_dict = {name: module for name, module in model.named_modules()}
@@ -229,6 +229,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
     assert args.ppl_target > 0 or args.param_ratio_target > 0
 
     input_ids = torch.cat([_["input_ids"] for _ in calib_loader], 0)
+    rates = []
     while low < high:
         mid = (low + high) // 2
         layers_min_ratio = {layername: 1 for layername in sensitivity_dict.keys()}
@@ -275,6 +276,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
     layers_min_ratio = {layername: 1 for layername in sensitivity_dict.keys()}
     for layername, ratio, ppl in sorted_sensitive_list[mid:]:
         layers_min_ratio[layername] = min(layers_min_ratio[layername], ratio)
+    rates = []
     for layername, ratio in tqdm(layers_min_ratio.items()):
         # set ratio
         raw_linear = module_dict[layername]
@@ -287,6 +289,10 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
             sigma_fuse=args.sigma_fuse,
         )
         setattr(info["father"], info["name"], svd_linear)
+        rates.append({"layer": str(raw_linear), 'layername': layername, 'ratio': ratio})
+
+    with open('rates.json', 'w') as f:
+        json.dump(rates, f)
 
 
 def fixed_truncation_rank(model, compression_ratio, args):
