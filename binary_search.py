@@ -52,7 +52,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
             for layername, ratio in layers_min_ratio.items():
                 raw_linear = module_dict[layername]
                 info = linear_info[raw_linear]
-                svd_linear, _ = SVDLinear.from_linear(
+                svd_linear = SVDLinear.from_linear(
                     raw_linear,
                     param_ratio=ratio,
                     alpha=args.alpha,
@@ -91,7 +91,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
         # set ratio
         raw_linear = module_dict[layername]
         info = linear_info[raw_linear]
-        svd_linear, _ = SVDLinear.from_linear(
+        svd_linear = SVDLinear.from_linear(
             raw_linear,
             param_ratio=ratio,
             alpha=args.alpha,
@@ -241,7 +241,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
             for layername, ratio in layers_min_ratio.items():
                 raw_linear = module_dict[layername]
                 info = linear_info[raw_linear]
-                svd_linear, _ = SVDLinear.from_linear(
+                svd_linear = SVDLinear.from_linear(
                     raw_linear,
                     param_ratio=ratio,
                     alpha=args.alpha,
@@ -282,7 +282,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
         # set ratio
         raw_linear = module_dict[layername]
         info = linear_info[raw_linear]
-        svd_linear, rank = SVDLinear.from_linear(
+        svd_linear = SVDLinear.from_linear(
             raw_linear,
             param_ratio=ratio,
             alpha=args.alpha,
@@ -290,6 +290,9 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
             sigma_fuse=args.sigma_fuse,
         )
 
+        n_params = raw_linear.weight.numel()
+        rank = int(n_params * param_ratio) // (raw_linear.in_features + raw_linear.out_features)
+        
         setattr(info["father"], info["name"], svd_linear)
 
         tokens = layername.split('.')
@@ -323,7 +326,7 @@ def fixed_truncation_rank(model, compression_ratio, args):
         # set ratio
         info = linear_info[raw_linear]
 
-        svd_linear, _ = SVDLinear.from_linear(
+        svd_linear = SVDLinear.from_linear(
             raw_linear,
             param_ratio=compression_ratio,
             alpha=args.alpha,
