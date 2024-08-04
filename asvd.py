@@ -196,7 +196,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--seed",
         type=int,
-        default=233,
+        default=42,
         help="random seed, which can significantly affect the calibration results",
     )
     parser.add_argument(
