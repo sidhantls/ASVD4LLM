@@ -52,7 +52,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
             for layername, ratio in layers_min_ratio.items():
                 raw_linear = module_dict[layername]
                 info = linear_info[raw_linear]
-                svd_linear = SVDLinear.from_linear(
+                svd_linear, _ = SVDLinear.from_linear(
                     raw_linear,
                     param_ratio=ratio,
                     alpha=args.alpha,
@@ -91,7 +91,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
         # set ratio
         raw_linear = module_dict[layername]
         info = linear_info[raw_linear]
-        svd_linear = SVDLinear.from_linear(
+        svd_linear, _ = SVDLinear.from_linear(
             raw_linear,
             param_ratio=ratio,
             alpha=args.alpha,
@@ -241,7 +241,7 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
             for layername, ratio in layers_min_ratio.items():
                 raw_linear = module_dict[layername]
                 info = linear_info[raw_linear]
-                svd_linear = SVDLinear.from_linear(
+                svd_linear, _ = SVDLinear.from_linear(
                     raw_linear,
                     param_ratio=ratio,
                     alpha=args.alpha,
@@ -276,20 +276,25 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
     layers_min_ratio = {layername: 1 for layername in sensitivity_dict.keys()}
     for layername, ratio, ppl in sorted_sensitive_list[mid:]:
         layers_min_ratio[layername] = min(layers_min_ratio[layername], ratio)
-    rates = []
+        
+    from collections import defaultdict; rates = defaultdict(dict) 
     for layername, ratio in tqdm(layers_min_ratio.items()):
         # set ratio
         raw_linear = module_dict[layername]
         info = linear_info[raw_linear]
-        svd_linear = SVDLinear.from_linear(
+        svd_linear, rank = SVDLinear.from_linear(
             raw_linear,
             param_ratio=ratio,
             alpha=args.alpha,
             act_aware=args.act_aware,
             sigma_fuse=args.sigma_fuse,
         )
+
         setattr(info["father"], info["name"], svd_linear)
-        rates.append({"layer": str(raw_linear), 'layername': layername, 'ratio': ratio})
+
+        tokens = layername.split('.')
+        if len(tokens) == 5 and tokens[2].isnumeric():
+            rates[tokens[2]][tokens[-1]] = rank
 
     with open('rates.json', 'w') as f:
         json.dump(rates, f)
@@ -318,7 +323,7 @@ def fixed_truncation_rank(model, compression_ratio, args):
         # set ratio
         info = linear_info[raw_linear]
 
-        svd_linear = SVDLinear.from_linear(
+        svd_linear, _ = SVDLinear.from_linear(
             raw_linear,
             param_ratio=compression_ratio,
             alpha=args.alpha,

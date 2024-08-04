@@ -107,7 +107,7 @@ class SVDLinear(nn.Module):
         assert len(Us) == len(Ss) == len(Vs) == 1
         new_linear = SVDLinear(Us[0], Ss[0], Vs[0], bias,sigma_fuse)
         new_linear.to(linear.weight.dtype)
-        return new_linear
+        return new_linear, rank
 
     def forward(self, inp):
         # compute USV^Tx + b
