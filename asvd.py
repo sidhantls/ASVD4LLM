@@ -12,7 +12,7 @@ from binary_search import binary_search_truncation_rank, fixed_truncation_rank
 import numpy as np
 import wandb
 from os.path import join 
-
+import json
 
 
 def count_parameters(model):
@@ -36,7 +36,7 @@ def main(args):
     torch.cuda.manual_seed_all(args.seed)
     torch.backends.cudnn.deterministic = True
 
-    wandb_writer = wandb.init(project="learn-to-compress-lrd", name='asvd', config=vars(args))
+    wandb_writer = wandb.init(project="learn-to-compress-lrd-2", name=args.exp_name, config=vars(args))
 
     # Load model
     model_id = args.model_id
@@ -45,7 +45,8 @@ def main(args):
     model = AutoModelForCausalLM.from_pretrained(
         model_id, device_map="cpu", torch_dtype=torch.float16, trust_remote_code=True, cache_dir=args.cache_dir
     )
-    num_params_original = count_parameters(model)
+    num_params_old = count_parameters(model)
+    model = model.to('cuda' if torch.cuda.is_available() else 'cpu')
 
     # if "llama" in model_id or "opt" in model_id:
     #     model = model.to_bettertransformer()
@@ -80,7 +81,7 @@ def main(args):
         elif args.weight_quant == "rtn_int6":
             rtn_quant_sequential(model, 6)
 
-    result = evaluate_with_harness_full(model, tokenizer, model.device, debug=False, batch_size=2)
+    result = evaluate_with_harness_full(model, tokenizer, model.device, debug=False, batch_size=args.eval_bs)
     print(result)
     if not os.path.exists("output"):
         os.makedirs("output")
@@ -91,10 +92,11 @@ def main(args):
     wandb.log({**result,'step': 0})
 
     num_params_new = count_parameters(model)
-    print(f"Number of parameters in original model: {num_params_original:.4f} billion")
-    print(f"Number of parameters in new model: {num_params_new:.4f} billion")
-    wandb.log({'old_param_count': num_params_original, 'new_param_count': num_params_new, 'step': 0})
-    
+   
+    compression_stats = { "compression_stats/new_params_billion": num_params_new, "compression_stats/old_params_billion": num_params_old, "compression_stats/compression_ratio": num_params_new / num_params_old }
+    print(f"\n\n--Compression Stats---\n{json.dumps(compression_stats, indent=4)}")
+    wandb.log({**compression_stats, 'step': 0})
+ 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -210,6 +212,22 @@ if __name__ == "__main__":
         default=-1,
         help="kv cache ratio",
     )
+
+
+    parser.add_argument(
+        "--eval_bs",
+        type=int,
+        default=-2,
+        help="batch size for evaluation harness",
+    )
+
+    parser.add_argument(
+        "--exp_name",
+        type=str,
+        default='asvd',
+        help="name of experiment",
+    )
+
     args = parser.parse_args()
 
     main(args)
