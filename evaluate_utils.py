@@ -290,9 +290,9 @@ def evaluate_with_harness_full(model, tokenizer, device, debug=False, batch_size
         bootstrap_iters=1
     )
 
-    all_metrics = {f'eval_harness_shot=0/{key}': results1['results'][key]['acc,none'] for key in results1['results']}
-    all_metrics[f'eval_harness_shot=5/nq_open'] = results_nq['results']['nq_open']['exact_match,remove_whitespace']
-    all_metrics[f'eval_harness_shot=0/mmlu'] = results_mmlu['results']['mmlu']['acc,none']
+    all_metrics = {f'final_eval_harness_shot=0/{key}': results1['results'][key]['acc,none'] for key in results1['results']}
+    all_metrics[f'final_eval_harness_shot=5/nq_open'] = results_nq['results']['nq_open']['exact_match,remove_whitespace']
+    all_metrics[f'final_eval_harness_shot=0/mmlu'] = results_mmlu['results']['mmlu']['acc,none']
 
     print(f'Completed evaluation with harness in {time.time()-start: 0.3f} seconds')
     return all_metrics
