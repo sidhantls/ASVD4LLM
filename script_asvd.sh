@@ -2,7 +2,7 @@
 
 # Grid Engine options (lines prefixed with #$)
 # Runtime limit of 10 hour:
-#$ -l h_rt=5:00:00
+#$ -l h_rt=05:00:00
 #
 # Set working directory to the directory where the job is submitted from:
 #$ -cwd
@@ -23,20 +23,20 @@ module load cuda
 module load anaconda 
 conda config --add envs_dirs /exports/eddie/scratch/s2593541/anaconda/envs
 conda config --add pkgs_dirs /exports/eddie/scratch/s2593541/anaconda/pkgs
-conda activate lrd2
+conda activate lrd3
 nvidia-smi
 export HF_DATASETS_CACHE="/exports/eddie/scratch/s2593541/cache/lm_eval"
 export TOKENIZERS_PARALLELISM=false
 
 
-EXP_NAME=strs_asvd_90
-python asvd.py --model_id=meta-llama/Llama-2-7b-hf --cache_dir=/exports/eddie/scratch/s2593541/lrd/cache_train_llama3 --act_aware --alpha 0.5 --n_calib_samples 32 --scaling_method abs_mean --param_ratio_target 0.90 --exp_name=$EXP_NAME
+#EXP_NAME=strs_asvd_90
+#python asvd.py --model_id=meta-llama/Llama-2-7b-hf --cache_dir=/exports/eddie/scratch/s2593541/lrd/cache_train_llama3 --act_aware --alpha 0.5 --n_calib_samples 32 --scaling_method abs_mean --param_ratio_target 0.90 --exp_name=$EXP_NAME
 
 #EXP_NAME=strs_asvd_85
 #python asvd.py --model_id=meta-llama/Llama-2-7b-hf --cache_dir=/exports/eddie/scratch/s2593541/lrd/cache_train_llama3 --act_aware --alpha 0.5 --n_calib_samples 32 --scaling_method abs_mean --param_ratio_target 0.85 --exp_name=$EXP_NAME --use_cache
 
-#EXP_NAME=strs_asvd_80
-#python asvd.py --model_id=meta-llama/Llama-2-7b-hf --cache_dir=/exports/eddie/scratch/s2593541/lrd/cache_train_llama3 --act_aware --alpha 0.5 --n_calib_samples 32 --scaling_method abs_mean --param_ratio_target 0.80 --exp_name=$EXP_NAME --use_cache
+EXP_NAME=strs_asvd_80
+python asvd.py --model_id=meta-llama/Llama-2-7b-hf --cache_dir=/exports/eddie/scratch/s2593541/lrd/cache_train_llama3 --act_aware --alpha 0.5 --n_calib_samples 32 --scaling_method abs_mean --param_ratio_target 0.80 --exp_name=$EXP_NAME --use_cache
 
 #EXP_NAME=strs_asvd_50
 #python asvd.py --model_id=meta-llama/Llama-2-7b-hf --cache_dir=/exports/eddie/scratch/s2593541/lrd/cache_train_llama3 --act_aware --alpha 0.5 --n_calib_samples 32 --scaling_method abs_mean --param_ratio_target 0.50 --exp_name=$EXP_NAME --use_cache
