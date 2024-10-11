@@ -13,7 +13,9 @@ import numpy as np
 import wandb
 from os.path import join 
 import json
+import datasets
 
+datasets.config.HF_DATASETS_TRUST_REMOTE_CODE=True
 
 def count_parameters(model):
     """
@@ -36,7 +38,7 @@ def main(args):
     torch.cuda.manual_seed_all(args.seed)
     torch.backends.cudnn.deterministic = True
 
-    wandb_writer = wandb.init(project="learn-to-compress-lrd2", name=args.exp_name, config=vars(args))
+    wandb_writer = wandb.init(project="learn-to-compress-lrd_final", name=args.exp_name, config=vars(args))
 
     # Load model
     model_id = args.model_id
@@ -78,16 +80,21 @@ def main(args):
             rtn_quant_sequential(model, 6)
 
     # evaluate
-    # result = evaluate_model(
-    #     model,
-    #     tokenizer,
-    #     args.model_id,
-    #     "mmlu" if args.eval_mmlu else "",
-    #     eval_ppl="wikitext2,ptb",
-    #     limit=-1,
-    # )
-
-    result = evaluate_with_harness_full(model, tokenizer, model.device, debug=False, batch_size=2)
+    #result = evaluate_model(
+    #    model,
+    #    tokenizer,
+    #    args.model_id,
+    #    "mmlu" if args.eval_mmlu else "",
+    #    eval_ppl="wikitext2,ptb",
+    #    limit=-1,
+    #)
+    
+    #result = {'default_' + k: v for k,v in result.items()}    
+    #wandb.log({**result,'step': 0})
+    
+    model = model.half()
+    result = evaluate_with_harness_full(model, tokenizer, model.device, debug=False, batch_size=args.eval_bs)
+    
     print(result)
     if not os.path.exists("output"):
         os.makedirs("output")
@@ -102,7 +109,8 @@ def main(args):
     compression_stats = { "compression_stats/new_params_billion": num_params_new, "compression_stats/old_params_billion": num_params_old, "compression_stats/compression_ratio": num_params_new / num_params_old }
     print(f"\n\n--Compression Stats---\n{json.dumps(compression_stats, indent=4)}")
     wandb.log({**compression_stats, 'step': 0})
- 
+    print('\n\n\n\nEval Results\n\n\n', result)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -215,6 +223,13 @@ if __name__ == "__main__":
         type=str,
         default='asvd',
         help="name of experiment",
+    )
+
+    parser.add_argument(
+        "--eval_bs",
+        type=int,
+        default=10,
+        help="batch size for eval",
     )
 
     args = parser.parse_args()
