@@ -12,6 +12,9 @@ import re
 
 from lm_eval.models import huggingface
 from lm_eval import simple_evaluate
+import datasets
+
+datasets.config.HF_DATASETS_TRUST_REMOTE_CODE=True
 
 # deprecated
 class BaseLM: 
@@ -208,9 +211,10 @@ def evaluate_model(
             lm,
             tasks=tasks.split(","),
             batch_size=batch_size,
-            num_fewshot=num_fewshot,
-            limit=None if limit == -1 else limit,
+            num_fewshot=0,
             no_cache=True,
+            #limit=None if limit == -1 else limit,
+            #cache_requests=None
         )
         t_results = t_results["results"]
         acc_list = [
@@ -221,7 +225,8 @@ def evaluate_model(
         print(results)
         # print mean
         print(f"\n\n===== mean acc: {sum(acc_list)/len(acc_list)} =====\n\n")
-
+    
+    print('\n\nEval Results:\n', results)
     return results
 
 
