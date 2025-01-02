@@ -29,11 +29,16 @@ export HF_DATASETS_CACHE="/exports/eddie/scratch/s2593541/cache/lm_eval"
 export TOKENIZERS_PARALLELISM=false
 
 MODEL=meta-llama/Meta-Llama-3-8B
-MODEL=google/gemma-7b
 CACHE_DIR=/exports/eddie/scratch/s2593541/lrd/cache_train_llama_8b
+USE_BOS=false 
 
-MODEL=meta-llama/Llama-2-13b-hf
-CACHE_DIR=/exports/eddie/scratch/s2593541/lrd/cache_train_llama13
+#MODEL=meta-llama/Llama-2-13b-hf
+#CACHE_DIR=/exports/eddie/scratch/s2593541/lrd/cache_train_llama13
+#USE_BOS=false 
+
+#MODEL=google/gemma-7b
+#CACHE_DIR=/exports/eddie/scratch/s2593541/lrd/cache_train_llama_gemma
+#USE_BOS=true
 
 EVAL_BS=4
 COMP_VALUES=(0.90 0.85 0.80)
