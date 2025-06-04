@@ -87,6 +87,8 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
     layers_min_ratio = {layername: 1 for layername in sensitivity_dict.keys()}
     for layername, ratio, ppl in sorted_sensitive_list[mid:]:
         layers_min_ratio[layername] = min(layers_min_ratio[layername], ratio)
+
+    compression_stats = [] 
     for layername, ratio in tqdm(layers_min_ratio.items()):
         # set ratio
         raw_linear = module_dict[layername]
@@ -100,8 +102,12 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
         )
         setattr(info["father"], info["name"], svd_linear)
 
+        compression_stats.append({"name": info["name"], "layername": layername, "param_ratio": param_ratio})
 
-
+    import json 
+    with open("strs_compression.json", "w") as f:
+        json.dump(compression_stats, f)
+        
 def binary_search_truncation_rank_optimize_scale(model, sensitivity_dict, calib_loader, args):
     module_dict = {name: module for name, module in model.named_modules()}
     full_name_dict = {module: name for name, module in model.named_modules()}
