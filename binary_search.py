@@ -109,6 +109,8 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
         else:
             layers_min_ratio[layername] = min(layers_min_ratio[layername], param_ratio)
     st = time.time()
+
+    compression_stats = []
     for layername, param_ratio in tqdm(layers_min_ratio.items()):
         # set ratio
         raw_linear = module_dict[layername]
@@ -126,10 +128,15 @@ def binary_search_truncation_rank(model, sensitivity_dict, calib_loader, args):
             )
             raw_linear.to("cpu")
         setattr(info["father"], info["name"], svd_linear)
+        compression_stats.append({"name": info["name"], "layername": layername, "param_ratio": param_ratio})
+    
         # print(f"decompose {info['full_name']} with ratio {param_ratio}")
     ed = time.time()
     print(f"decompose time: {ed-st}")
 
+    import json 
+    with open("compression_stats", "w") as f:
+        json.dump(compression_stats, f)
 
 def binary_search_truncation_rank_optimize_scale(model, sensitivity_dict, calib_loader, args):
     module_dict = {name: module for name, module in model.named_modules()}
