@@ -60,9 +60,9 @@ def main(args):
             args.calib_dataset, tokenizer, model_id, args.n_calib_samples, seed=args.seed, use_bos=args.use_bos
         )
         if "fisher" in args.scaling_method:
-            calib_fisher_info(model, calib_loader, args.use_cache)
+            calib_fisher_info(model, calib_loader, args, args.use_cache)
         if "abs" in args.scaling_method:
-            calib_input_distribution(model, calib_loader, args.scaling_method, args.use_cache)
+            calib_input_distribution(model, calib_loader, args.scaling_method, args, args.use_cache)
         if args.sensitivity_metric == "ppl":
             sensitivity = calib_sensitivity_ppl(model, calib_loader, args, args.use_cache)
         elif args.sensitivity_metric == "stable_rank":
